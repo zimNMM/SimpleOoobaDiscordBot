@@ -6,9 +6,12 @@ from discord.app_commands import describe
 from discord import app_commands
 import httpx
 import base64
-ooba_alpaca= "Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request."
+
+ooba_alpaca= "Below is an instruction that describes a task, Write a response that appropriately completes the request."
 ooba_url = "http://127.0.0.1:5000/v1/completions"
-sd_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
+sd_url_txt2img = "http://127.0.0.1:7860/sdapi/v1/txt2img"
+sd_url_lora = "http://127.0.0.1:7860/sdapi/v1/loras"
+
 
 def run():
     intents = discord.Intents.default()
@@ -68,7 +71,7 @@ def run():
             }
 
             async with httpx.AsyncClient() as client:
-                response = await client.post(sd_url, json=sd_payload)
+                response = await client.post(sd_url_txt2img, json=sd_payload)
 
                 if response.status_code != 200:
                     await interaction.followup.send("Error: Unable to generate an image.")
@@ -85,9 +88,27 @@ def run():
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
 
+    @bot.tree.command(name="getloras", description="Get Loras names.")
+    async def getloras(interaction):
+        try:
+            await interaction.response.defer()
 
-        
-        
+            async with httpx.AsyncClient() as client:
+                response = await client.get(sd_url_lora)
+
+                if response.status_code != 200:
+                    await interaction.followup.send("Error: Unable to get Loras.")
+                    return
+
+                loras_data = response.json()
+
+                names = [f"<lora:{lora.get('name', '')}:1>" for lora in loras_data]
+                names_str = ' '.join(names)
+
+            await interaction.followup.send(names_str)
+
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred: {str(e)}")
 
     bot.run(settings.DISCORD_API_SECRET)
 if __name__ == "__main__":
