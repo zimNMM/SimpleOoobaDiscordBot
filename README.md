@@ -5,5 +5,5 @@ To run create an .env file and write
 
  Run main.py
  
- install dependencies with pip install
+ install dependencies with pip install -r requirments.txt
 
