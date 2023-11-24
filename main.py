@@ -6,7 +6,9 @@ from discord.app_commands import describe
 from discord import app_commands
 import httpx
 import base64
-from PIL import Image
+ooba_alpaca= "Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request."
+ooba_url = "http://127.0.0.1:5000/v1/completions"
+sd_url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
 
 def run():
     intents = discord.Intents.default()
@@ -25,18 +27,16 @@ def run():
     async def ask(interaction, prompt: str):
         try:
             await interaction.response.defer()
-            api_url = "http://127.0.0.1:5000/v1/completions"
 
-        
-            data = {
-                "prompt": f"### Input:\n{prompt}\n\n### Response:\n",
+            ooba_payload = {
+                "prompt": f"{ooba_alpaca}### Input:\n{prompt}\n\n### Response:\n",
                 "temperature": 0.5,  
                 "max_tokens": 200
             }
 
         
             async with httpx.AsyncClient() as client:
-                response = await client.post(api_url, json=data)
+                response = await client.post(ooba_url, json=ooba_payload)
 
         
             if response.status_code == 200:
@@ -46,12 +46,8 @@ def run():
     
                 generated_text = full_text.split("### Response:\n")[-1].strip()
 
-    
-                if len(generated_text) <= 1500:
-                    await interaction.followup.send(generated_text)
-                else:
-                    file = discord.File(fp=io.BytesIO(generated_text.encode("utf-8")), filename="message.txt")
-                    await interaction.followup.send(file=file)
+                await interaction.followup.send(generated_text)
+
             else:
                 await interaction.followup.send("Error: Unable to get a response from the API.")
 
@@ -60,18 +56,19 @@ def run():
 
     @bot.tree.command(name="imagine", description="Generate an image from a prompt.")   
     @describe(prompt="Your image prompt.")
-    async def imagine(interaction, prompt: str):
+    async def imagine(interaction, prompt: str, width: int = 512, height: int = 512):
         try:
             await interaction.response.defer()
 
-            url = "http://127.0.0.1:7860/sdapi/v1/txt2img"
-            payload = {
+            sd_payload = {
                 "prompt": prompt,
-                "steps": 25
+                "steps": 25,
+                "width": width,
+                "height": height
             }
 
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload)
+                response = await client.post(sd_url, json=sd_payload)
 
                 if response.status_code != 200:
                     await interaction.followup.send("Error: Unable to generate an image.")
