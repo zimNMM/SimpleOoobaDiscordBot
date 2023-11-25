@@ -9,8 +9,8 @@ import base64
 
 ooba_alpaca= "Below is an instruction that describes a task, Write a response that appropriately completes the request."
 ooba_url = "http://127.0.0.1:5000/v1/completions"
-sd_url_txt2img = "http://127.0.0.1:7860/sdapi/v1/txt2img"
-sd_url_lora = "http://127.0.0.1:7860/sdapi/v1/loras"
+sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
+sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
 
 
 def run():
@@ -59,7 +59,7 @@ def run():
 
     @bot.tree.command(name="imagine", description="Generate an image from a prompt.")   
     @describe(prompt="Your image prompt.")
-    async def imagine(interaction, prompt: str, width: int = 512, height: int = 512):
+    async def imagine(interaction, prompt: str, width: int = 512, height: int = 512, n: int =1):
         try:
             await interaction.response.defer()
 
@@ -67,7 +67,8 @@ def run():
                 "prompt": prompt,
                 "steps": 25,
                 "width": width,
-                "height": height
+                "height": height,
+                "batch_size": n
             }
 
             async with httpx.AsyncClient(timeout=120.0) as client:
@@ -78,12 +79,15 @@ def run():
                     return
 
                 r = response.json()
-                image_data = base64.b64decode(r['images'][0])
+                images = r.get('images', [])
 
-                with io.BytesIO(image_data) as image_io:
-                    image_io.seek(0)
-                    discord_file = discord.File(fp=image_io, filename="image.png")
-                    await interaction.followup.send(file=discord_file)
+
+                for idx, img_base64 in enumerate(images):
+                    image_data = base64.b64decode(img_base64)
+                    with io.BytesIO(image_data) as image_io:
+                        image_io.seek(0)
+                        discord_file = discord.File(fp=image_io, filename=f"image_{idx}.png")
+                        await interaction.followup.send(file=discord_file)
 
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
