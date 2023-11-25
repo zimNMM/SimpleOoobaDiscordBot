@@ -70,7 +70,7 @@ def run():
                 "height": height
             }
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=120.0) as client:
                 response = await client.post(sd_url_txt2img, json=sd_payload)
 
                 if response.status_code != 200:
