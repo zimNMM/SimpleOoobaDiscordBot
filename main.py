@@ -7,12 +7,13 @@ from discord import app_commands
 import httpx
 import base64
 import sqlite3
+from aiohttp import client_exceptions
 
 ooba_alpaca= "Below is an instruction that describes a task, Write a response that appropriately completes the request."
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
-nsfw_api_key = 'NSFW-API' #nsfw-categorize.it
+nsfw_api_key = 'NSFW-API-KEY' #nsfw-categorize.it
 
 
 def setup_database():
@@ -81,17 +82,35 @@ def run():
 
     @bot.tree.command(name="imagine", description="Generate an image from a prompt.")   
     @describe(prompt="Your image prompt.")
-    async def imagine(interaction, prompt: str, width: int = 512, height: int = 512, n: int =1):
+    @describe(codeformer="Set to True to enable Codeformer restoration.")
+    @describe(adetailer="Set to True to enable Adetailer extension.")
+    async def imagine(interaction, prompt: str, width: int = 512, height: int = 512, n: int =1, codeformer: str = "False",adetailer: str = "False"):
         try:
             await interaction.response.defer()
+            codeformer_bool = codeformer.lower() == "true"
+            adetailer_bool = adetailer.lower() == "true"
 
             sd_payload = {
                 "prompt": prompt,
                 "steps": 25,
                 "width": width,
                 "height": height,
-                "batch_size": n
+                "batch_size": n,
+                "restore_faces": codeformer_bool,
+                "alwayson_scripts": {
+                    "ADetailer": {
+                        "args": [
+                            adetailer_bool,  
+                            {
+                        "ad_model": "face_yolov8n.pt"
+                            }
+                        ]
+                    }
+                }
             }
+
+
+
 
             async with httpx.AsyncClient(timeout=360.0) as client:
                 response = await client.post(sd_url_txt2img, json=sd_payload)
@@ -161,7 +180,12 @@ def run():
         conn.close()
 
         await interaction.response.send_message(f"NSFW check is now {'enabled' if new_value == 'True' else 'disabled'}.")
-    bot.run(settings.DISCORD_API_SECRET)
+    try:
+        bot.run(settings.DISCORD_API_SECRET)
+    except client_exceptions.ClientConnectorError as e:
+        print(f"Network error: Unable to connect to Discord.")
+    except Exception as e:
+        print(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
     run()
