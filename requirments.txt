@@ -1,2 +1,4 @@
 discord.py
 httpx
+psutil
+gputil
