@@ -17,7 +17,7 @@ ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
 nsfw_api_key = 'NSFW-API-KEY' #nsfw-categorize.it
-
+httpx_timeout= 360.0
 async def get_system_info():
     info = {
         'platform': platform.system(),
@@ -57,7 +57,7 @@ def run():
         headers = {'NSFWKEY': nsfw_api_key}
         files = {'image': ('image.png', image_io, 'image/png')}
     
-        async with httpx.AsyncClient(timeout=360.0) as client:
+        async with httpx.AsyncClient(timeout=httpx_timeout) as client:
             response = await client.post(url, headers=headers, files=files)
     
         if response.status_code == 200:
@@ -106,7 +106,7 @@ def run():
                 "max_tokens": 200
             }
         
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx_timeout) as client:
                 response = await client.post(ooba_url, json=ooba_payload)
 
             if response.status_code == 200:
@@ -123,10 +123,12 @@ def run():
 
     @bot.tree.command(name="imagine", description="Generate an image from a prompt.")   
     @describe(prompt="Your image prompt.")
+    @describe(neg_prompt="Negative prompts, things you don't want to see in the image there is already a default one, leave blank if you don't know")
     @describe(codeformer="Set to True to enable Codeformer restoration.")
     @describe(adetailer="Set to True to enable Adetailer extension.")
     @describe(n="Number of batch photos to generate max 8.")
-    async def imagine(interaction, prompt: str, width: int = 512, height: int = 512, n: int =1, codeformer: str = "False",adetailer: str = "False",):
+    async def imagine(interaction, prompt: str, neg_prompt: str = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry",width: int = 512, height: int = 512, n: int =1, codeformer: str = "False",adetailer: str = "False",):
+        
         try:
             await interaction.response.defer()
             codeformer_bool = codeformer.lower() == "true"
@@ -134,6 +136,7 @@ def run():
 
             sd_payload = {
                 "prompt": prompt,
+                "negative_prompt": neg_prompt,
                 "steps": 30,
                 "width": width,
                 "height": height,
@@ -154,7 +157,7 @@ def run():
 
 
 
-            async with httpx.AsyncClient(timeout=360.0) as client:
+            async with httpx.AsyncClient(timeout=httpx_timeout) as client:
                 response = await client.post(sd_url_txt2img, json=sd_payload)
 
                 if response.status_code != 200:
@@ -191,7 +194,7 @@ def run():
         try:
             await interaction.response.defer()
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=httpx_timeout) as client:
                 response = await client.get(sd_url_lora)
 
                 if response.status_code != 200:
