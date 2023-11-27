@@ -11,13 +11,14 @@ from aiohttp import client_exceptions
 import platform
 import psutil
 import GPUtil
-
+import json
 ooba_alpaca= "Below is an instruction that describes a task, Write a response that appropriately completes the request."
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
-nsfw_api_key = 'NSFW-API-KEY' #nsfw-categorize.it
-httpx_timeout= 360.0
+nsfw_api_key = 'YOUR-API-KEY' #nsfw-categorize.it
+httpx_timeout= 360.
+interaction_history=5
 async def get_system_info():
     info = {
         'platform': platform.system(),
@@ -40,9 +41,49 @@ def setup_database():
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS settings (setting_name TEXT PRIMARY KEY, setting_value TEXT)''')
     c.execute('''INSERT OR IGNORE INTO settings (setting_name, setting_value) VALUES ('nsfw_enabler', 'True')''')
+    c.execute('''CREATE TABLE IF NOT EXISTS convos (user_id TEXT PRIMARY KEY, history TEXT)''')
+
     conn.commit()
     conn.close()
 
+async def debug_print_all_convos():
+    conn = sqlite3.connect('bot_settings.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM convos')
+    all_convos = c.fetchall()
+    for convo in all_convos:
+        print(convo)
+    conn.close()
+
+
+async def update_convo_history(user_id: str, user_message: str, bot_response: str):
+    conn = sqlite3.connect('bot_settings.db')
+    c = conn.cursor()
+    c.execute('SELECT history FROM convos WHERE user_id = ?', (user_id,))
+    result = c.fetchone()
+    if result:
+        history = json.loads(result[0])
+        history.append({'user': user_message, 'bot': bot_response})
+        history = history[-interaction_history:]
+        c.execute('UPDATE convos SET history = ? WHERE user_id = ?', (json.dumps(history), user_id))
+        print(f"Updated history for {user_id}: {history}")
+    else:
+        history = [{'user': user_message, 'bot': bot_response}]
+        c.execute('INSERT INTO convos (user_id, history) VALUES (?, ?)', (user_id, json.dumps(history)))
+        print(f"Created new history for {user_id}: {history}")
+    conn.commit()
+    conn.close()
+
+async def get_convo_history(user_id: str):
+    conn = sqlite3.connect('bot_settings.db')
+    c = conn.cursor()
+    c.execute('SELECT history FROM convos WHERE user_id = ?', (user_id,))
+    result = c.fetchone()
+    conn.close()
+    if result:
+        return json.loads(result[0])
+    return []
+   
 def run():
     setup_database()
     intents = discord.Intents.default()
@@ -57,7 +98,7 @@ def run():
         headers = {'NSFWKEY': nsfw_api_key}
         files = {'image': ('image.png', image_io, 'image/png')}
     
-        async with httpx.AsyncClient(timeout=httpx_timeout) as client:
+        async with httpx.AsyncClient(timeout=360.0) as client:
             response = await client.post(url, headers=headers, files=files)
     
         if response.status_code == 200:
@@ -97,24 +138,28 @@ def run():
     @bot.tree.command(name="say", description="Ask a model a question.")
     @describe(prompt="Your prompt.")
     async def ask(interaction, prompt: str):
+        user_id = str(interaction.user.id)
         try:
             await interaction.response.defer()
+            convo_history = await get_convo_history(user_id)
+            history_str = "\n".join([f"### Instruction:\n{m['user']}\n### Response:\n{m['bot']}" for m in convo_history])
+            print(f"Current history for {user_id}: {history_str}")
 
             ooba_payload = {
-                "prompt": f"{ooba_alpaca}### Input:\n{prompt}\n\n### Response:\n",
+                "prompt": f"{ooba_alpaca}{history_str}\n### Instruction:\n{prompt}\n\n### Response:\n",
                 "temperature": 0.5,  
                 "max_tokens": 200
             }
-        
+
             async with httpx.AsyncClient(timeout=httpx_timeout) as client:
                 response = await client.post(ooba_url, json=ooba_payload)
 
             if response.status_code == 200:
                 response_data = response.json()
-                full_text = response_data.get("choices")[0].get("text")
-
+                full_text = response_data.get("choices")[0].get("text").strip()
+                await update_convo_history(user_id, prompt, full_text)
+                await debug_print_all_convos()
                 await interaction.followup.send(full_text)
-
             else:
                 await interaction.followup.send("Error: Unable to get a response from the API.")
 
