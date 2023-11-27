@@ -2,3 +2,4 @@ discord.py
 httpx
 psutil
 gputil
+colorama
