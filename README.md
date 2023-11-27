@@ -7,6 +7,8 @@ To run create an .env file and write
  
  install dependencies with pip install -r requirments.txt
 
+Required SD extensions: Adetailer
+
  Commands
  /say 
  /imagine
