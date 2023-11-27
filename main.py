@@ -6,15 +6,25 @@ from discord.app_commands import describe
 from discord import app_commands
 import httpx
 import base64
+import sqlite3
 
 ooba_alpaca= "Below is an instruction that describes a task, Write a response that appropriately completes the request."
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
-nsfw_enabler = False  #Set True to enable nsfw check fron nsfw-categorize
-nsfw_api_key = 'NSFW-API-KEY' #nsfw-categorize.it
+nsfw_api_key = 'NSFW-API' #nsfw-categorize.it
+
+
+def setup_database():
+    conn = sqlite3.connect('bot_settings.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS settings (setting_name TEXT PRIMARY KEY, setting_value TEXT)''')
+    c.execute('''INSERT OR IGNORE INTO settings (setting_name, setting_value) VALUES ('nsfw_enabler', 'True')''')
+    conn.commit()
+    conn.close()
 
 def run():
+    setup_database()
     intents = discord.Intents.default()
     intents.message_content = True
     client = discord.Client(intents=intents)
@@ -53,20 +63,15 @@ def run():
                 "temperature": 0.5,  
                 "max_tokens": 200
             }
-
         
             async with httpx.AsyncClient() as client:
                 response = await client.post(ooba_url, json=ooba_payload)
 
-        
             if response.status_code == 200:
                 response_data = response.json()
                 full_text = response_data.get("choices")[0].get("text")
 
-    
-                generated_text = full_text.split("### Response:\n")[-1].strip()
-
-                await interaction.followup.send(generated_text)
+                await interaction.followup.send(full_text)
 
             else:
                 await interaction.followup.send("Error: Unable to get a response from the API.")
@@ -98,7 +103,12 @@ def run():
                 r = response.json()
                 images = r.get('images', [])
 
-  
+                conn = sqlite3.connect('bot_settings.db')
+                c = conn.cursor()
+                c.execute('''SELECT setting_value FROM settings WHERE setting_name = 'nsfw_enabler' ''')
+                nsfw_enabler = c.fetchone()[0] == 'True' 
+                conn.close()
+
                 for idx, img_base64 in enumerate(images):
                     image_data = base64.b64decode(img_base64)
                     with io.BytesIO(image_data) as image_io:
@@ -137,6 +147,21 @@ def run():
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
 
+    @bot.tree.command(name="toggle_nsfw", description="Toggle NSFW check on/off.")
+    async def toggle_nsfw(interaction):
+        conn = sqlite3.connect('bot_settings.db')
+        c = conn.cursor()
+    
+        c.execute('''SELECT setting_value FROM settings WHERE setting_name = 'nsfw_enabler' ''')
+        current_value = c.fetchone()[0] == 'True'
+        new_value = 'False' if current_value else 'True'
+
+        c.execute('''UPDATE settings SET setting_value = ? WHERE setting_name = 'nsfw_enabler' ''', (new_value,))
+        conn.commit()
+        conn.close()
+
+        await interaction.response.send_message(f"NSFW check is now {'enabled' if new_value == 'True' else 'disabled'}.")
     bot.run(settings.DISCORD_API_SECRET)
+
 if __name__ == "__main__":
     run()
