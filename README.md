@@ -7,3 +7,9 @@ To run create an .env file and write
  
  install dependencies with pip install -r requirments.txt
 
+ Commands
+ /say 
+ /imagine
+ /toggle_nsfw
+ /getloras
+
