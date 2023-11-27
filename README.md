@@ -14,4 +14,4 @@ Required SD extensions: Adetailer
  /imagine
  /toggle_nsfw
  /getloras
-
+/sysinfo
