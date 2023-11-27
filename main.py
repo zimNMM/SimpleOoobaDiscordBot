@@ -11,7 +11,8 @@ ooba_alpaca= "Below is an instruction that describes a task, Write a response th
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
-
+nsfw_enabler = False  #Set True to enable nsfw check fron nsfw-categorize
+nsfw_api_key = 'NSFW-API-KEY' #nsfw-categorize.it
 
 def run():
     intents = discord.Intents.default()
@@ -20,6 +21,22 @@ def run():
     tree = app_commands.CommandTree(client)
     bot = commands.Bot(command_prefix="/",intents=intents)
     
+    
+    async def check_nsfw(image_io):
+        url = 'https://nsfw-categorize.it/api/upload'
+        headers = {'NSFWKEY': nsfw_api_key}
+        files = {'image': ('image.png', image_io, 'image/png')}
+    
+        async with httpx.AsyncClient(timeout=360.0) as client:
+            response = await client.post(url, headers=headers, files=files)
+    
+        if response.status_code == 200:
+            result = response.json()
+            return result.get("status") == "OK" and result["data"].get("nsfw")
+        else:
+            raise Exception("NSFW check failed")
+
+
     @bot.event
     async def on_ready():
         print(bot.user)
@@ -71,7 +88,7 @@ def run():
                 "batch_size": n
             }
 
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=360.0) as client:
                 response = await client.post(sd_url_txt2img, json=sd_payload)
 
                 if response.status_code != 200:
@@ -81,11 +98,17 @@ def run():
                 r = response.json()
                 images = r.get('images', [])
 
-
+  
                 for idx, img_base64 in enumerate(images):
                     image_data = base64.b64decode(img_base64)
                     with io.BytesIO(image_data) as image_io:
-                        image_io.seek(0)
+                        if nsfw_enabler:
+                            is_nsfw = await check_nsfw(image_io)
+                            if is_nsfw:
+                                await interaction.followup.send(f"Image detected as NSFW. Not displaying.")
+                                continue
+                            image_io.seek(0)
+
                         discord_file = discord.File(fp=image_io, filename=f"image_{idx}.png")
                         await interaction.followup.send(file=discord_file)
 
@@ -116,4 +139,4 @@ def run():
 
     bot.run(settings.DISCORD_API_SECRET)
 if __name__ == "__main__":
-    run();
+    run()
