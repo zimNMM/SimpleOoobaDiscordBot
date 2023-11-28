@@ -12,6 +12,7 @@ import platform
 import psutil
 import GPUtil
 import json
+
 ooba_alpaca= "Below is an instruction that describes a task, Write a response that appropriately completes the request."
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
@@ -99,7 +100,7 @@ def run():
         headers = {'NSFWKEY': nsfw_api_key}
         files = {'image': ('image.png', image_io, 'image/png')}
     
-        async with httpx.AsyncClient(timeout=360.0) as client:
+        async with httpx.AsyncClient(timeout=httpx_timeout) as client:
             response = await client.post(url, headers=headers, files=files)
     
         if response.status_code == 200:
@@ -136,18 +137,18 @@ def run():
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
 
-    @bot.tree.command(name="say", description="Ask a model a question.")
+    @bot.tree.command(name="say", description="Ask a model a question. It has memory of 5 lines")
     @describe(prompt="Your prompt.")
     async def ask(interaction, prompt: str):
         user_id = str(interaction.user.id)
         try:
             await interaction.response.defer()
             convo_history = await get_convo_history(user_id)
-            history_str = "\n".join([f"### Instruction:\n{m['user']}\n### Response:\n{m['bot']}" for m in convo_history])
-            print(f"Current history for {user_id}: {history_str}")
+
+            history_content = "\n".join([f"{m['user']}\n{m['bot']}" for m in convo_history[-interaction_history:]])
 
             ooba_payload = {
-                "prompt": f"{ooba_alpaca}{history_str}\n### Instruction:\n{prompt}\n\n### Response:\n",
+                "prompt": f"{ooba_alpaca}\n{history_content}\n### Instruction:\n{prompt}\n\n### Response:\n",
                 "temperature": 0.5,  
                 "max_tokens": 100
             }
@@ -158,14 +159,22 @@ def run():
             if response.status_code == 200:
                 response_data = response.json()
                 full_text = response_data.get("choices")[0].get("text").strip()
+                
+                end_index = full_text.find("### Instruction:")
+                if end_index == -1:
+                    end_index = full_text.find("### Response:")
+                if end_index != -1:
+                    full_text = full_text[:end_index].strip()
+                
                 await update_convo_history(user_id, prompt, full_text)
-                await debug_print_all_convos()
                 await interaction.followup.send(full_text)
             else:
                 await interaction.followup.send("Error: Unable to get a response from the API.")
 
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
+
+
 
     @bot.tree.command(name="imagine", description="Generate an image from a prompt.")   
     @describe(prompt="Your image prompt.")
