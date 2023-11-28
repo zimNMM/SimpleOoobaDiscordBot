@@ -16,9 +16,10 @@ ooba_alpaca= "Below is an instruction that describes a task, Write a response th
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
-nsfw_api_key = 'YOUR-API-KEY' #nsfw-categorize.it
+nsfw_api_key = 'NSFW-API-KEY' #nsfw-categorize.it
 httpx_timeout= 360.
 interaction_history=5
+
 async def get_system_info():
     info = {
         'platform': platform.system(),
@@ -148,7 +149,7 @@ def run():
             ooba_payload = {
                 "prompt": f"{ooba_alpaca}{history_str}\n### Instruction:\n{prompt}\n\n### Response:\n",
                 "temperature": 0.5,  
-                "max_tokens": 200
+                "max_tokens": 100
             }
 
             async with httpx.AsyncClient(timeout=httpx_timeout) as client:
@@ -268,14 +269,29 @@ def run():
         c.execute('''UPDATE settings SET setting_value = ? WHERE setting_name = 'nsfw_enabler' ''', (new_value,))
         conn.commit()
         conn.close()
-
         await interaction.response.send_message(f"NSFW check is now {'enabled' if new_value == 'True' else 'disabled'}.")
+    
+    @bot.tree.command(name="drop", description="Erase your conversation history.")
+    async def drop(interaction):
+        user_id = str(interaction.user.id)
+
+        try:
+            conn = sqlite3.connect('bot_settings.db')
+            c = conn.cursor()
+            c.execute('DELETE FROM convos WHERE user_id = ?', (user_id,))
+            conn.commit()
+            conn.close()
+            await interaction.response.send_message("Your conversation history has been erased.")
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred: {str(e)}")
+
     try:
         bot.run(settings.DISCORD_API_SECRET)
     except client_exceptions.ClientConnectorError as e:
         print(f"Network error: Unable to connect to Discord.")
     except Exception as e:
         print(f"An unexpected error occurred: {str(e)}")
+
 
 if __name__ == "__main__":
     run()
