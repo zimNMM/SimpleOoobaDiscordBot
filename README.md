@@ -15,3 +15,4 @@ Required SD extensions: Adetailer
  /toggle_nsfw
  /getloras
 /sysinfo
+/drop
