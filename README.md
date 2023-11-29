@@ -22,3 +22,4 @@ nsfw-categorize(nsfw check)
 /drop
 /setcharacter
 /speak
+/setvoice
