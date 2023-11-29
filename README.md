@@ -8,6 +8,10 @@ To run create an .env file and write
  install dependencies with pip install -r requirments.txt
 
 Required SD extensions: Adetailer
+optional api keys:
+ElevenLabs(/speak command)
+nsfw-categorize(nsfw check)
+
 
  Commands
  /say 
@@ -17,3 +21,4 @@ Required SD extensions: Adetailer
 /sysinfo
 /drop
 /setcharacter
+/speak
