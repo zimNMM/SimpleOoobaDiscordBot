@@ -16,3 +16,4 @@ Required SD extensions: Adetailer
  /getloras
 /sysinfo
 /drop
+/setcharacter
