@@ -350,7 +350,7 @@ def run():
             await interaction.response.send_message("Persona not found.")
             
 
-    @bot.tree.command(name="speak", description="Speak to a model like he is mitsotakis")
+    @bot.tree.command(name="speak", description="Speak to a model and get response from TTS")
     @describe(prompt="Your prompt.")
     async def ask(interaction, prompt: str):
         user_id = str(interaction.user.id)
