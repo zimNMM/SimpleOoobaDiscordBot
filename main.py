@@ -252,17 +252,29 @@ def run():
     @describe(codeformer="Set to True to enable Codeformer restoration.")
     @describe(adetailer="Set to True to enable Adetailer extension.")
     @describe(n="Number of batch photos to generate max 8.")
-    async def imagine(interaction, prompt: str, neg_prompt: str = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry",width: int = 512, height: int = 512, n: int =1, codeformer: str = "False",adetailer: str = "False",):
+    @describe(turbo="Enable Turbo Mode using the LCM-lora")
+    async def imagine(interaction, prompt: str, neg_prompt: str = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry",width: int = 512, height: int = 512, n: int =1, codeformer: str = "False",adetailer: str = "False",
+                      turbo: str = "False"):
         
         try:
             await interaction.response.defer()
             codeformer_bool = codeformer.lower() == "true"
             adetailer_bool = adetailer.lower() == "true"
+            turbo_bool = turbo.lower() == "true"
 
+            if turbo_bool:
+                steps = 5
+                cfg = 2
+                prompt = prompt + " <lora:pytorch_lora_weights:0.7>"
+            else:
+                steps = 30
+                cfg = 7
+                
             sd_payload = {
                 "prompt": prompt,
                 "negative_prompt": neg_prompt,
-                "steps": 30,
+                "cfg_scale": cfg,
+                "steps": steps,
                 "width": width,
                 "height": height,
                 "batch_size": n,
