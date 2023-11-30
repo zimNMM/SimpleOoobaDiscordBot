@@ -15,7 +15,7 @@ import json
 import math
 from PIL import Image
 
-eleven_labs_api = '504d03e8f94801ef4ed1fd4a9e4fbdc6'
+eleven_labs_api = 'ELEVENLABS-API-KEY'
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://127.0.0.1:7861/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
