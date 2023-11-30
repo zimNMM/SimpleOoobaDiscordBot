@@ -7,18 +7,17 @@ To run create an .env file and write
  
  install dependencies with pip install -r requirments.txt
 
-For Turbo mode download the LCM lora
+For Turbo mode download the LCM lora for 1.5
 
 Required SD extensions: Adetailer
+
 optional api keys:
 ElevenLabs(/speak command)
-nsfw-categorize(nsfw check)
 
 
  Commands
  /say 
  /imagine
- /toggle_nsfw
  /getloras
 /sysinfo
 /drop
