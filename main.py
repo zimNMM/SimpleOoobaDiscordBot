@@ -22,6 +22,8 @@ import shutil
 import itertools
 
 eleven_labs_api = '9edb96534db2aa5ac9c70d19d3808501'
+sms_box_user = 'flabouras'
+sms_box_pass = 'flabouras51'
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://192.168.1.29:7860/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
@@ -223,6 +225,27 @@ def run():
     async def on_ready():
         print(bot.user)
         sync_commands = await bot.tree.sync()
+
+    @bot.tree.command(name="smssend", description="Send an SMS to a receipeint.")
+    async def smssend(interaction, recipient: str, message: str, sender: str = str):
+        try:
+            await interaction.response.defer()
+            # Post request to smsbox.gr
+            smsbox_payload = {
+                "user": sms_box_user,
+                "pass": sms_box_pass,
+                "from": sender,
+                "to": recipient,
+                "text": message
+            }
+            async with httpx.AsyncClient(timeout=httpx_timeout) as client:
+                response = await client.post("https://www.smsbox.gr/api/sms/send", data=smsbox_payload)
+            if response.status_code == 200:
+                await interaction.followup.send("SMS sent.")
+            else:
+                await interaction.followup.send("Error: Unable to send SMS.")
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred: {str(e)}")
 
     @bot.tree.command(name="sysinfo", description="System info.")
     async def sysinfo(interaction):
