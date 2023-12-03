@@ -244,18 +244,13 @@ def run():
         try:
             await interaction.response.defer()
             async with httpx.AsyncClient(timeout=httpx_timeout) as client: 
-                #country code compare the first 3 digits with this http://country.io/phone.json and get the 2 letter country code drop the + from the string 
-                res = await client.get('http://country.io/phone.json')
-                country_codes = res.json()
-                phone_without_plus = phone[1:]
-                country_code = country_codes.get(phone_without_plus[:3])
-                response = await client.post(f"http://apilayer.net/api/validate?access_key={numverify_api}&number={phone[3:]}&country_code={country_code}&format=1")
+                response = await client.post(f"http://apilayer.net/api/validate?access_key={numverify_api}&number={phone}&country_code=GR&format=1")
             if response.status_code == 200:
-                await interaction.followup.send("Phone found." + response.text + "country code " + country_code + " phone " + phone_without_plus + " phone without + " + phone[3:] + " country codes " + country_codes)
+                await interaction.followup.send("Phone found." + response.text)
             else:
                 await interaction.followup.send("Error: Unable to find phone.")
         except Exception as e:
-            await interaction.followup.send(f"An error occurred: {str(e)} + country code {country_code} + phone {phone_without_plus} + phone without + {phone[3:]} + country codes {country_codes}")
+            await interaction.followup.send(f"An error occurred: {str(e)}")
     @bot.tree.command(name="smsbalance", description="Get SMS balance.")
     async def smsbalance(interaction):
         try:
