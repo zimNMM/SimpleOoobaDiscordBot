@@ -251,7 +251,7 @@ def run():
                 country_code = country_codes.get(phone_without_plus[:3])
                 response = await client.post(f"http://apilayer.net/api/validate?access_key={numverify_api}&number={phone[3:]}&country_code={country_code}&format=1")
             if response.status_code == 200:
-                await interaction.followup.send("Phone found." + response.text)
+                await interaction.followup.send("Phone found." + response.text + "country code " + country_code + " phone " + phone_without_plus + " phone without + " + phone[3:] + " country codes " + country_codes)
             else:
                 await interaction.followup.send("Error: Unable to find phone.")
         except Exception as e:
