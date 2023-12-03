@@ -234,9 +234,39 @@ def run():
             async with httpx.AsyncClient(timeout=httpx_timeout) as client:
                 response = await client.post(f"http://www.smsbox.gr/httpapi/sendsms.php?username={sms_box_user}&password={sms_box_pass}&text={message}&from={sender}&to={recipient}")
             if response.status_code == 200:
-                await interaction.followup.send("SMS sent.")
+                await interaction.followup.send("SMS sent." + response.text)
             else:
                 await interaction.followup.send("Error: Unable to send SMS.")
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred: {str(e)}")
+    @bot.tree.command(name="findphone", description="Find a phone number.")
+    # http://apilayer.net/api/validate
+    #? access_key = ed33e7eecbbb85d809f631ce601aa1e4
+    # #& number = 14158586273
+    #& country_code = 
+    #& format = 1
+    async def findphone(interaction, phone: str):
+        try:
+            await interaction.response.defer()
+            async with httpx.AsyncClient(timeout=httpx_timeout) as client:
+                response = await client.post(f"http://apilayer.net/api/validate?access_key={sms_box_user}&number={phone}&country_code=&format=1")
+            if response.status_code == 200:
+                await interaction.followup.send("Phone found." + response.text)
+            else:
+                await interaction.followup.send("Error: Unable to find phone.")
+        except Exception as e:
+            await interaction.followup.send(f"An error occurred: {str(e)}")
+    @bot.tree.command(name="smsbalance", description="Get SMS balance.")
+    # http://www.smsbox.gr/httpapi/getbalance.php?username=user&password=pass 
+    async def smsbalance(interaction):
+        try:
+            await interaction.response.defer()
+            async with httpx.AsyncClient(timeout=httpx_timeout) as client:
+                response = await client.post(f"http://www.smsbox.gr/httpapi/getbalance.php?username={sms_box_user}&password={sms_box_pass}")
+            if response.status_code == 200:
+                await interaction.followup.send("SMS balance." + response.text)
+            else:
+                await interaction.followup.send("Error: Unable to get SMS balance.")
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
 
