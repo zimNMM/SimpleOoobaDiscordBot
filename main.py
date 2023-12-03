@@ -255,7 +255,7 @@ def run():
             else:
                 await interaction.followup.send("Error: Unable to find phone.")
         except Exception as e:
-            await interaction.followup.send(f"An error occurred: {str(e)}")
+            await interaction.followup.send(f"An error occurred: {str(e)} + country code {country_code} + phone {phone_without_plus} + phone without + {phone[3:]} + country codes {country_codes}")
     @bot.tree.command(name="smsbalance", description="Get SMS balance.")
     async def smsbalance(interaction):
         try:
