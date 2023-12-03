@@ -264,6 +264,10 @@ def run():
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
 
+    @bot.tree.command(name="froutoadress", description="Get the adress for frouto.")
+    async def froutoadress(interaction):
+        await interaction.response.send_message("RB4Z1bboWYzrmurMVVriV1wrNK7KpECaCZtAMXJtWTJ")
+        
     @bot.tree.command(name="sysinfo", description="System info.")
     async def sysinfo(interaction):
         try:
