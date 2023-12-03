@@ -243,8 +243,8 @@ def run():
     async def findphone(interaction, phone: str):
         try:
             await interaction.response.defer()
-            async with httpx.AsyncClient(timeout=httpx_timeout) as client:
-                response = await client.post(f"http://apilayer.net/api/validate?access_key={numverify_api}&number={phone}")
+            async with httpx.AsyncClient(timeout=httpx_timeout) as client: #country code = first 3 digits of {number} + number = {number} without the first 3 digits
+                response = await client.post(f"http://apilayer.net/api/validate?access_key={numverify_api}&number={phone[3:]}&country_code={phone[:3]}&format=1")
             if response.status_code == 200:
                 await interaction.followup.send("Phone found." + response.text)
             else:
