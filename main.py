@@ -23,7 +23,7 @@ import itertools
 
 eleven_labs_api = '9edb96534db2aa5ac9c70d19d3808501'
 sms_box_user = 'flabouras'
-sms_box_pass = 'flabouras51'
+sms_box_pass = 'Flabouras3@'
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://192.168.1.29:7860/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
