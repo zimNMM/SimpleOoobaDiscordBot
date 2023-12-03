@@ -230,16 +230,9 @@ def run():
     async def smssend(interaction, recipient: str, message: str, sender: str):
         try:
             await interaction.response.defer()
-            # Post request to smsbox.gr
-            smsbox_payload = {
-                "user": sms_box_user,
-                "pass": sms_box_pass,
-                "from": sender,
-                "to": recipient,
-                "text": message
-            }
+            # http://www.smsbox.gr/httpapi/sendsms.php?username=x&password=x&text=x&from=x&to=x 
             async with httpx.AsyncClient(timeout=httpx_timeout) as client:
-                response = await client.post("https://www.smsbox.gr/api/sms/send", data=smsbox_payload)
+                response = await client.post(f"http://www.smsbox.gr/httpapi/sendsms.php?username={sms_box_user}&password={sms_box_pass}&text={message}&from={sender}&to={recipient}")
             if response.status_code == 200:
                 await interaction.followup.send("SMS sent.")
             else:
