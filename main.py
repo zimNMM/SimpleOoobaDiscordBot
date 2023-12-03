@@ -227,7 +227,7 @@ def run():
         sync_commands = await bot.tree.sync()
 
     @bot.tree.command(name="smssend", description="Send an SMS to a receipeint.")
-    async def smssend(interaction, recipient: str, message: str, sender: str = str):
+    async def smssend(interaction, recipient: str, message: str, sender: str):
         try:
             await interaction.response.defer()
             # Post request to smsbox.gr
