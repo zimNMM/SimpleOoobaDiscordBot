@@ -244,11 +244,11 @@ def run():
         try:
             await interaction.response.defer()
             async with httpx.AsyncClient(timeout=httpx_timeout) as client: 
-                #country code compare the first 3 digits with this http://country.io/phone.json and get the 2 letter country code
-
+                #country code compare the first 3 digits with this http://country.io/phone.json and get the 2 letter country code drop the + from the string 
                 res = await client.get('http://country.io/phone.json')
                 country_codes = res.json()
-                country_code = country_codes[phone[:3]]
+                phone_without_plus = phone[1:]
+                country_code = country_codes.get(phone_without_plus[:3])
                 response = await client.post(f"http://apilayer.net/api/validate?access_key={numverify_api}&number={phone[3:]}&country_code={country_code}&format=1")
             if response.status_code == 200:
                 await interaction.followup.send("Phone found." + response.text)
