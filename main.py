@@ -24,6 +24,7 @@ import itertools
 eleven_labs_api = '9edb96534db2aa5ac9c70d19d3808501'
 sms_box_user = 'flabouras'
 sms_box_pass = 'Flabouras3@'
+numverify_api = 'ed33e7eecbbb85d809f631ce601aa1e4'
 ooba_url = "http://127.0.0.1:5000/v1/completions"
 sd_url_txt2img = "http://192.168.1.29:7860/sdapi/v1/txt2img"
 sd_url_lora = "http://127.0.0.1:7861/sdapi/v1/loras"
@@ -230,7 +231,6 @@ def run():
     async def smssend(interaction, recipient: str, message: str, sender: str):
         try:
             await interaction.response.defer()
-            # http://www.smsbox.gr/httpapi/sendsms.php?username=x&password=x&text=x&from=x&to=x 
             async with httpx.AsyncClient(timeout=httpx_timeout) as client:
                 response = await client.post(f"http://www.smsbox.gr/httpapi/sendsms.php?username={sms_box_user}&password={sms_box_pass}&text={message}&from={sender}&to={recipient}")
             if response.status_code == 200:
@@ -240,16 +240,11 @@ def run():
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
     @bot.tree.command(name="findphone", description="Find a phone number.")
-    # http://apilayer.net/api/validate
-    #? access_key = ed33e7eecbbb85d809f631ce601aa1e4
-    # #& number = 14158586273
-    #& country_code = 
-    #& format = 1
     async def findphone(interaction, phone: str):
         try:
             await interaction.response.defer()
             async with httpx.AsyncClient(timeout=httpx_timeout) as client:
-                response = await client.post(f"http://apilayer.net/api/validate?access_key={sms_box_user}&number={phone}&country_code=&format=1")
+                response = await client.post(f"http://apilayer.net/api/validate?access_key={numverify_api}&number={phone}")
             if response.status_code == 200:
                 await interaction.followup.send("Phone found." + response.text)
             else:
@@ -257,7 +252,6 @@ def run():
         except Exception as e:
             await interaction.followup.send(f"An error occurred: {str(e)}")
     @bot.tree.command(name="smsbalance", description="Get SMS balance.")
-    # http://www.smsbox.gr/httpapi/getbalance.php?username=user&password=pass 
     async def smsbalance(interaction):
         try:
             await interaction.response.defer()
